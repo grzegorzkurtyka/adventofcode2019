@@ -11,21 +11,34 @@ fun main(args: Array<String>) {
     println("part1 = ${part1.first} * ${part1.second} = ${part1.first * part1.second}")
 
     val part2 = part2(pixels)
+    val tmp = part2.chunked(25)
+    for (l in tmp) {
+        println(l.map { it -> if (it == 1) "*" else " " }.joinToString(" "))
+    }
 }
 
-fun part2(pixels: List<Int>): Unit {
+fun part2(pixels: List<Int>): List<Int> {
 
+    val skip = 6 * 25
+
+    val layers = pixels.foldIndexed(
+        mutableMapOf<Int, List<Int>>(),
+        { index, acc, v: Int ->
+            val l = acc.getOrElse(index % skip, { mutableListOf<Int>() })
+            acc[index % skip] = l + v
+            acc
+        }
+    ).toMap()
+    val p = layers.mapValues { k -> k.value.filter { it != 2 }.get(0) }
+    return p.values.toList()
 }
 
 fun part1(pixels: List<Int>): Pair<Int, Int> {
 
     val layers = pixels.chunked(6 * 25)
 
-//    val counts = layers.map { layer -> { layer.groupByTo(mutableMapOf(), {it}) } }
     val counts = layers
         .map { layer -> layer.groupByTo(mutableMapOf(), { k -> k }) }
-
-//    println("pixCount=${pixels.size}")
 
     for (l in layers)
         println(l)
@@ -38,8 +51,8 @@ fun part1(pixels: List<Int>): Pair<Int, Int> {
     println(tmp1[1]?.count())
     println(tmp1[2]?.count())
 
-    val count1 = tmp1.getOrElse(1, { mutableListOf<Int>()}).count()
-    val count2 = tmp1.getOrElse(2, { mutableListOf<Int>()}).count()
+    val count1 = tmp1.getOrElse(1, { mutableListOf<Int>() }).count()
+    val count2 = tmp1.getOrElse(2, { mutableListOf<Int>() }).count()
 
     return Pair<Int, Int>(count1, count2)
 }
