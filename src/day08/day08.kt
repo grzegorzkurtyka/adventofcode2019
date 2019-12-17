@@ -13,7 +13,7 @@ fun main(args: Array<String>) {
     val part2 = part2(pixels)
     val tmp = part2.chunked(25)
     for (l in tmp) {
-        println(l.map { it -> if (it == 1) "*" else " " }.joinToString(" "))
+        println(l.map { it -> if (it == 1) "█" else " " }.joinToString(" "))
     }
 }
 

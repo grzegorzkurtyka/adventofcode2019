@@ -64,7 +64,7 @@ class IntegerComputer(private val input: List<Int>) {
         val output: MutableList<Int> = mutableListOf<Int>()
         while (!halt) {
             opcode = Opcode(mem[pc])
-            println("pc=${pc} instr=${opcode.instr}")
+            print("pc=${pc} instr:${opcode.instr} modes:${opcode.param1Mode},${opcode.param2Mode},${opcode.param3Mode} ")
             when (opcode.instr) {
                 1 -> { // add
                     val a1: Int = readMem(pc + 1, opcode.param1Mode)
@@ -79,32 +79,43 @@ class IntegerComputer(private val input: List<Int>) {
                     val r = a1 * a2
                     writePositionMode(pc + 3, r)
                     pc += 4
-                } // readInput
-                3 -> {
-                    val a1: Int = inp.removeAt(0)
-                    writeImediateMode(mem[pc+1], a1)
+                }
+                3 -> { // readInput
+                    val r1: Int = inp.removeAt(0)
+                    writeMem(pc+1, r1, opcode.param1Mode)
+//                    writeImediateMode(mem[pc+1], a1)
                     pc += 2
-                } // writeOutput
-                4 -> {
-                    val a1 = readImediateMode(mem[pc + 1])
-                    output.add(a1)
+                }
+                4 -> { // writeOutput
+                    val r1 = readMem(pc + 1, opcode.param1Mode)
+                    output.add(r1)
                     pc += 2
                 }
                 5 -> { // jump-if-true
-                    if (mem[pc + 1] != 0) {
-                        pc = mem[pc + 2]
+                    val r1 = readMem(pc + 1, opcode.param1Mode)
+                    val r2 = readMem(pc + 2, opcode.param2Mode)
+                    print("jump-if-nz  $r1 addr: $r2")
+                    if (r1 !=0) {
+                        pc = r2
+                    } else {
+                        pc += 3
                     }
-                    pc += 3
                 }
                 6 -> { // jump-if-false
                     val r1 = readMem(pc + 1, opcode.param1Mode)
+                    val r2 = readMem(pc + 2, opcode.param2Mode)
+                    print("jump-if-z  $r1 addr: $r2")
                     if (r1 == 0) {
-                        pc = readMem(pc + 2, opcode.param2Mode)
+                        pc = r2
+                    } else {
+                        pc += 3
                     }
-                    pc += 3
                 }
-                7 -> {
-                    if (readMem(pc + 1, opcode.param1Mode) < readMem(pc + 2, opcode.param2Mode)) {
+                7 -> { // less than
+                    val r1 = readMem(pc + 1, opcode.param1Mode)
+                    val r2 = readMem(pc + 2, opcode.param2Mode)
+                    print("less-than  $r1 < $r2")
+                    if (r1 < r2) {
                         writeMem(pc + 3, 1, opcode.param3Mode)
                     } else {
                         writeMem(pc + 3, 0, opcode.param3Mode)
@@ -112,7 +123,11 @@ class IntegerComputer(private val input: List<Int>) {
                     pc += 4
                 }
                 8 -> { // equals
-                    if (mem[pc + 1] == mem[pc + 2]) {
+                    val r1 = readMem(pc + 1, opcode.param1Mode)
+                    val r2 = readMem(pc + 2, opcode.param2Mode)
+                    print("equals  $r1 == $r2")
+
+                    if (r1 == r2) {
                         writeMem(pc + 3, 1, opcode.param3Mode)
                     } else {
                         writeMem(pc + 3, 0, opcode.param3Mode)
@@ -126,7 +141,9 @@ class IntegerComputer(private val input: List<Int>) {
                     throw Exception("Illegal instruction: ${opcode.instr} pc=$pc v=${mem[pc]}")
                 }
             }
+            println()
         }
+        println()
         return output.toList()
     }
 
@@ -135,10 +152,18 @@ class IntegerComputer(private val input: List<Int>) {
     }
 
     private fun readMem(addr: Int, paramMode: Byte): Int =
-        if (paramMode.compareTo(0) == 0) readPositionMode(addr) else readImediateMode(addr)
+        when (paramMode.toInt()) {
+            0 -> readPositionMode(addr)
+            1 -> readImediateMode(addr)
+            else -> throw Exception("Unknown parameter mode(readMem) ${paramMode.toInt()}")
+        }
 
     private fun writeMem(addr: Int, value: Int, paramMode: Byte): Unit =
-        if (paramMode.compareTo(0) == 0) writePositionMode(addr, value) else writeImediateMode(addr, value)
+        when(paramMode.toInt()) {
+            0 -> writePositionMode(addr, value)
+            1 -> writeImediateMode(addr, value)
+            else -> throw Exception("Unknown parameter mode(writeMem ${paramMode.toInt()}")
+        }
 
     fun readPositionMode(addr: Int) = mem[mem[addr]]
     fun readImediateMode(addr: Int) = mem[addr]
