@@ -1,6 +1,6 @@
 package day07
 
-import day02.IntegerComputer
+import intcomputer.IntegerComputer
 import java.io.File
 
 fun main(args: Array<String>) {
@@ -8,7 +8,7 @@ fun main(args: Array<String>) {
 //
     val pathName = "input/day07.txt"
     val f = File(pathName).readText()
-    val mem = f.split(',').map { s -> s.trim().toInt() }
+    val mem = f.split(',').map { s -> s.trim().toLong() }
 
 //    val processor = IntegerComputer(mem)
 //    var output: List<Int> = mutableListOf()
@@ -17,7 +17,7 @@ fun main(args: Array<String>) {
 
     val l = (0..4).toList()
     val sequences = permute(l)
-    val combinations: MutableList<Pair<String, Int>> = mutableListOf<Pair<String, Int>>()
+    val combinations: MutableList<Pair<String, Long>> = mutableListOf<Pair<String, Long>>()
 
 //
 
@@ -32,29 +32,29 @@ fun main(args: Array<String>) {
 //        val s = sequence.joinToString(",")
 
 
-        var output= listOf<Int>()
+        var output= listOf<Long>()
 
 //        val o = output[0]
 //        println("$s $o")
 //
         val processor1 = IntegerComputer(mem)
-        output = processor1.processProgram(listOf(sequence[0], 0))
+        output = processor1.processProgram(listOf<Long>(sequence[0].toLong(), 0))
 //        println("OUTPUT=${output}")
 
         val processor2 = IntegerComputer(mem)
-        output = processor2.processProgram(listOf(sequence[1], output[0]))
+        output = processor2.processProgram(listOf(sequence[1].toLong(), output[0]))
 //        println("OUTPUT=${output}")
 
         val processor3 = IntegerComputer(mem)
-        output = processor3.processProgram(listOf(sequence[2], output[0]))
+        output = processor3.processProgram(listOf(sequence[2].toLong(), output[0]))
 //        println("OUTPUT=${output}")
 
         val processor4 = IntegerComputer(mem)
-        output = processor4.processProgram(listOf(sequence[3], output[0]))
+        output = processor4.processProgram(listOf(sequence[3].toLong(), output[0]))
 //        println("OUTPUT=${output}")
 
         val processor5 = IntegerComputer(mem)
-        output = processor5.processProgram(listOf(sequence[4], output[0]))
+        output = processor5.processProgram(listOf(sequence[4].toLong(), output[0]))
 //        println("sequence = ${sequence} OUTPUT=${output}")
 //
         val s = sequence.joinToString(",")
