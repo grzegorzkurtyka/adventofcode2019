@@ -13,7 +13,8 @@ fun main(args: Array<String>) {
     var output: List<Long> = mutableListOf()
 
 
-    output = processor.processProgram(listOf<Long>(5))
+    processor.addInput(listOf<Long>(5))
+    output = processor.processProgram()
     println("OUTPUT=${output}")
     println("MEM=${processor.dumpMem()}")
 

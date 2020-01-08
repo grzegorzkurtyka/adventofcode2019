@@ -1,18 +1,34 @@
 package intcomputer
 
-class IntegerComputer(private val input: List<Long>, private val memSize: Int? = null) {
+class IntegerComputer(memory: List<Long>, private val memSize: Int? = null) {
 
     private var relativeBase: Int = 0
+
+    private var dbg = false
+
+    private var pc = 0
+
+    private var halt = false
+
+    fun isHalted() = halt
+
+    private var waitInput = false
+
+    fun awaitsInput() = waitInput
+
+    private val input: MutableList<Long> = mutableListOf<Long>()
+
+    private val output: MutableList<Long> = mutableListOf<Long>()
 
     private val mem: MutableList<Long> = if (memSize != null) {
         val tmp = arrayOfNulls<Long>(memSize)
         tmp.fill(0)
-        for ((a, i) in input.withIndex()) {
+        for ((a, i) in memory.withIndex()) {
             tmp[a] = i
         }
         tmp.map { it!!.toLong() }.toMutableList()
     } else {
-        input.toMutableList()
+        memory.toMutableList()
     }
 
     fun storeInMem(address: Int, value: Long): IntegerComputer {
@@ -20,21 +36,32 @@ class IntegerComputer(private val input: List<Long>, private val memSize: Int? =
         return this;
     }
 
-    fun processProgram(input: List<Long> = emptyList()): List<Long> {
-        val inp = input.toMutableList<Long>()
-        var pc = 0
-        var halt = false
+    fun enableDebug() {
+        this.dbg = true
+    }
+
+    fun getOutput(): List<Long> {
+        val ret = output.toList()
+        output.clear()
+        return ret;
+    }
+
+    fun addInput(inputList: List<Long>) {
+        input.addAll(inputList)
+        waitInput = false;
+    }
+
+    fun processProgram(): List<Long> {
         var opcode: Opcode;
-        val output: MutableList<Long> = mutableListOf<Long>()
-        while (!halt) {
+        while (!halt && !waitInput) {
             opcode = Opcode(mem[pc].toInt())
-            print("pc=${pc} mnem=${opcode.mnem} instr:${opcode.instr} modes:${opcode.param1Mode},${opcode.param2Mode},${opcode.param3Mode} ")
+            dbg("pc=${pc} mnem=${opcode.mnem} instr:${opcode.instr} modes:${opcode.param1Mode},${opcode.param2Mode},${opcode.param3Mode} ")
             when (opcode.instr) {
                 1 -> { // add
                     val a1: Long = readMem(pc + 1, opcode.param1Mode)
                     val a2: Long = readMem(pc + 2, opcode.param2Mode)
                     val r = a1 + a2
-                    print("add  $a1 + $a2 = $r")
+                    dbg("add  $a1 + $a2 = $r")
                     writeMem(pc + 3, r, opcode.param3Mode)
                     pc += 4
                 }
@@ -42,26 +69,31 @@ class IntegerComputer(private val input: List<Long>, private val memSize: Int? =
                     val a1: Long = readMem(pc + 1, opcode.param1Mode)
                     val a2: Long = readMem(pc + 2, opcode.param2Mode)
                     val r: Long = a1 * a2
-                    print("multiply  $a1 * $a2 = $r")
+                    dbg("multiply  $a1 * $a2 = $r")
                     writeMem(pc + 3, r, opcode.param3Mode)
                     pc += 4
                 }
                 3 -> { // readInput
-                    val r1: Long = inp.removeAt(0)
-                    writeMem(pc + 1, r1, opcode.param1Mode)
-                    print("readInput  $r1")
-                    pc += 2
+                    if (input.size > 0) {
+                        val r1: Long = input.removeAt(0)
+                        writeMem(pc + 1, r1, opcode.param1Mode)
+                        dbg("readInput  $r1")
+                        pc += 2
+                    } else {
+                        waitInput = true;
+                    }
+
                 }
                 4 -> { // writeOutput
                     val r1 = readMem(pc + 1, opcode.param1Mode)
-                    print("writeOutput $r1")
+                    dbg("writeOutput $r1")
                     output.add(r1)
                     pc += 2
                 }
                 5 -> { // jump-if-true
                     val r1 = readMem(pc + 1, opcode.param1Mode)
                     val r2 = readMem(pc + 2, opcode.param2Mode)
-                    print("jump-if-nz  $r1 addr: $r2")
+                    dbg("jump-if-nz  $r1 addr: $r2")
                     if (!r1.equals(0.toLong())) {
                         pc = r2.toInt()
                     } else {
@@ -71,8 +103,8 @@ class IntegerComputer(private val input: List<Long>, private val memSize: Int? =
                 6 -> { // jump-if-false
                     val r1 = readMem(pc + 1, opcode.param1Mode)
                     val r2 = readMem(pc + 2, opcode.param2Mode)
-                    print("jump-if-z  $r1 addr: $r2")
-                    if (r1.equals(0.toLong())) {
+                    dbg("jump-if-z  $r1 addr: $r2")
+                    if (r1 == 0.toLong()) {
                         pc = r2.toInt()
                     } else {
                         pc += 3
@@ -81,7 +113,7 @@ class IntegerComputer(private val input: List<Long>, private val memSize: Int? =
                 7 -> { // less than
                     val r1 = readMem(pc + 1, opcode.param1Mode)
                     val r2 = readMem(pc + 2, opcode.param2Mode)
-                    print("less-than  $r1 < $r2")
+                    dbg("less-than  $r1 < $r2")
                     if (r1 < r2) {
                         writeMem(pc + 3, 1, opcode.param3Mode)
                     } else {
@@ -92,7 +124,7 @@ class IntegerComputer(private val input: List<Long>, private val memSize: Int? =
                 8 -> { // equals
                     val r1 = readMem(pc + 1, opcode.param1Mode)
                     val r2 = readMem(pc + 2, opcode.param2Mode)
-                    print("equals  $r1 == $r2")
+                    dbg("equals  $r1 == $r2")
 
                     if (r1 == r2) {
                         writeMem(pc + 3, 1, opcode.param3Mode)
@@ -102,10 +134,10 @@ class IntegerComputer(private val input: List<Long>, private val memSize: Int? =
                     pc += 4
                 }
                 9 -> {
-                    print("relativeBase $relativeBase")
+                    dbg("relativeBase $relativeBase")
                     val r1 = readMem(pc + 1, opcode.param1Mode).toInt()
                     relativeBase += r1
-                    print(" to $relativeBase")
+                    dbg(" to $relativeBase")
                     pc += 2
                 }
                 99 -> {
@@ -115,7 +147,7 @@ class IntegerComputer(private val input: List<Long>, private val memSize: Int? =
                     throw Exception("Illegal instruction: ${opcode.instr} pc=$pc v=${mem[pc]}")
                 }
             }
-            println()
+            dbgln()
         }
         println()
         return output.toList()
@@ -157,4 +189,12 @@ class IntegerComputer(private val input: List<Long>, private val memSize: Int? =
     }
 
     fun dumpMem(): List<Long> = mem.toList()
+
+    private inline fun dbg(stmt: Any?) =
+        if (this.dbg) print(stmt) else {
+        }
+
+    private inline fun dbgln(stmt: Any? = null) =
+        if (this.dbg) println(stmt) else {
+        }
 }
